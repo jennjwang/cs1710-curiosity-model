@@ -51,33 +51,37 @@ pred OTurn[b: Board] {
   add[1, #{row, col: Int | b.board[row][col] = O}]
 }
 
--- 2's comp: 4 bits = 2^4 = 16 Ints to work with
--- [-8, 7]
-firstTest: run {some b: Board | starting[b]} for exactly 2 Board, 4 Int
-
 pred winning[b: Board, p: Player] {
     -- win H
-    some row: Int | {
-        b.board[row][0] = p and
-        b.board[row][1] = p and
-        b.board[row][2] = p
+    some row, col: Int | {
+        b.board[row][col] = p and
+        b.board[row][add[col, 1]] = p and
+        b.board[row][add[col, 2]] = p and
+        b.board[row][add[col, 3]] = p
     }
     or 
     -- win V
-    (some col: Int | {
-        b.board[0][col] = p 
-        b.board[1][col] = p 
-        b.board[2][col] = p
+    (some col, row: Int | {
+        b.board[row][col] = p 
+        b.board[add[row, 1]][col] = p 
+        b.board[add[row, 2]][col] = p
+        b.board[add[row, 3]][col] = p
     })
     or
     -- win D
-    {b.board[0][0] = p
-     b.board[1][1] = p
-     b.board[2][2] = p} 
+    {
+        b.board[row][col] = p
+        b.board[add[row, 1]][add[col, 1]] = p
+        b.board[add[row, 2]][add[col, 2]] = p
+        b.board[add[row, 3]][add[col, 3]] = p
+    } 
     or 
-    {b.board[0][2] = p
-     b.board[1][1] = p
-     b.board[2][0] = p}
+    {
+        b.board[row][add[col, 3]] = p
+        b.board[add[row, 1]][add[col, 2]] = p
+        b.board[add[row, 2]][add[col, 1]] = p
+        b.board[add[row, 3]][col] = p
+    }
 
 }
 
@@ -85,6 +89,15 @@ findWinningX: run {
     some b: Board | { 
         wellformed[b]
         winning[b, X]
+        (XTurn[b] or OTurn[b]) // balanced board
+    }
+} 
+  for exactly 1 Board, 4 Int
+
+findWinningO: run {
+    some b: Board | { 
+        wellformed[b]
+        winning[b, O]
         (XTurn[b] or OTurn[b]) // balanced board
     }
 } 
