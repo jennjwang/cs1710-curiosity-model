@@ -85,40 +85,78 @@ pred winning[b: Board, p: Player] {
 
 }
 
-findWinningX: run {
-    some b: Board | { 
-        wellformed[b]
-        winning[b, X]
-        (XTurn[b] or OTurn[b]) // balanced board
-    }
-} 
-  for exactly 1 Board, 4 Int
+// findWinningX: run {
+//     some b: Board | { 
+//         wellformed[b]
+//         winning[b, X]
+//         (XTurn[b] or OTurn[b]) // balanced board
+//     }
+// } 
+//   for exactly 1 Board, 4 Int
 
-findWinningO: run {
-    some b: Board | { 
-        wellformed[b]
-        winning[b, O]
-        (XTurn[b] or OTurn[b]) // balanced board
+// findWinningO: run {
+//     some b: Board | { 
+//         wellformed[b]
+//         winning[b, O]
+//         (XTurn[b] or OTurn[b]) // balanced board
+//     }
+// } 
+//   for exactly 1 Board, 4 Int
+
+// find lowest empty spot in a column
+pred lowestEmpty[b: Board, col: Int, row: Int] {
+    // position is empty
+    no b.board[row][col]
+    // either at bottom row or has piece below
+    (row = 0 or some b.board[subtract[row, 1]][col])
+    // no empty spaces below this position
+    all lowerRow: Int | {
+        lowerRow >= 0 and lowerRow < row implies
+        some b.board[lowerRow][col]
     }
-} 
-  for exactly 1 Board, 4 Int
+}
 
 pred move[pre: Board, r, c: Int, p: Player, post: Board] {
-    // GUARD
-    no pre.board[r][c]
+    // column must be valid
+    c >= 0 and c <= 6
+    
+    // column must not be full
+    some row: Int | {
+        row >= 0 and row <= 5
+        no pre.board[row][c]
+    }
+    
+    // must be player's turn
     p = X implies XTurn[pre]
     p = O implies OTurn[pre]
     
-    // ACTION 
-    post.board[r][c] = p
-    // FRAME (nothing else changes)
-    all r2, c2: Int | (r2 != r or c2 != c) => {
-        post.board[r2][c2] = pre.board[r2][c2]
+    // find lowest empty position and place piece
+    some row: Int | {
+        lowestEmpty[pre, c, row]
+        post.board[row][c] = p
+        
+        all r2, c2: Int | {
+            (r2 != row or c2 != c) implies {
+                post.board[r2][c2] = pre.board[r2][c2]
+            }
+        }
     }
-
-
 }
 
+test_turns: run {
+    some b1, b2, b3: Board | {
+        wellformed[b1]
+        wellformed[b2]
+        wellformed[b3]
+        
+        starting[b1]  // empty board
+        
+        some c1, c2: Int | {
+            move[b1, c1, X, b2]  // X moves first
+            move[b2, c2, O, b3]  // O moves second
+        }
+    }
+} for exactly 3 Board, 5 Int
 
 // turns 
 // end conditions 
