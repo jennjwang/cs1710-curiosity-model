@@ -116,7 +116,7 @@ pred lowestEmpty[b: Board, col: Int, row: Int] {
     }
 }
 
-pred move[pre: Board, r, c: Int, p: Player, post: Board] {
+pred move[pre: Board, c: Int, p: Player, post: Board] {
     // column must be valid
     c >= 0 and c <= 6
     
@@ -133,8 +133,12 @@ pred move[pre: Board, r, c: Int, p: Player, post: Board] {
     // find lowest empty position and place piece
     some row: Int | {
         lowestEmpty[pre, c, row]
+        // Clear any previous piece at this position
+        no pre.board[row][c]
+        // Place new piece
         post.board[row][c] = p
         
+        // Frame: preserve all OTHER positions
         all r2, c2: Int | {
             (r2 != row or c2 != c) implies {
                 post.board[r2][c2] = pre.board[r2][c2]
@@ -151,9 +155,17 @@ test_turns: run {
         
         starting[b1]  // empty board
         
-        some c1, c2: Int | {
+        // Force first move to be at bottom of column
+        some c1: Int | {
             move[b1, c1, X, b2]  // X moves first
-            move[b2, c2, O, b3]  // O moves second
+            b2.board[0][c1] = X  // Piece must be at bottom
+            
+            // Second move must be in different column
+            some c2: Int | {
+                c2 != c1  // Different column
+                move[b2, c2, O, b3]  // O moves second
+                b3.board[0][c2] = O  // Also at bottom
+            }
         }
     }
 } for exactly 3 Board, 5 Int
