@@ -11,9 +11,22 @@ sig Board {
 }
 
 pred wellformed[b: Board] {
+    // constrain row indices (0 to 5, for 6 rows)
     all row, col: Int | {
-        (row < 0 or row > 2 or col < 0 or col > 2)
-        implies no b.board[row][col]
+        (row < 0 or row > 5) implies no b.board[row][col]
+    }
+    
+    // constrain column indices (0 to 6, for 7 columns)
+    all row, col: Int | {
+        (col < 0 or col > 6) implies no b.board[row][col]
+    }
+    
+    // no floating pieces
+    all row, col: Int | {
+        // if there's a piece at (row, col)
+        (some b.board[row][col] and row > 0) implies
+        // there must be a piece below it (row-1, col)
+        some b.board[subtract[row, 1]][col]
     }
 }
 
