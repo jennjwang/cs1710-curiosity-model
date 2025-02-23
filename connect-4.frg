@@ -85,6 +85,14 @@ pred winning[b: Board, p: Player] {
 
 }
 
+pred guaranteedWin[b: Board, p: Player] {
+    wellformed[b]
+    // must be player's turn
+    p = X implies XTurn[b]
+    p = O implies OTurn[b]
+    winning[b, p]
+}
+
 // findWinningX: run {
 //     some b: Board | { 
 //         wellformed[b]
@@ -94,14 +102,30 @@ pred winning[b: Board, p: Player] {
 // } 
 //   for exactly 1 Board, 4 Int
 
-// findWinningO: run {
-//     some b: Board | { 
-//         wellformed[b]
-//         winning[b, O]
-//         (XTurn[b] or OTurn[b]) // balanced board
-//     }
-// } 
-//   for exactly 1 Board, 4 Int
+test_guaranteed_win: run {
+    some b: Board | {
+        // Find position where X has guaranteed win
+        guaranteedWin[b, X]
+        
+        // Must be X's turn
+        XTurn[b]
+        
+        // Not already won
+        not winning[b, X]
+        
+        // Keep game state reasonable
+        #{row, col: Int | b.board[row][col] = X} = 
+        #{row, col: Int | b.board[row][col] = O}
+    }
+} for exactly 3 Board, 5 Int
+
+findWinningO: run {
+     some b: Board | { 
+         // wellformed[b]
+         guaranteedWin[b, O]
+         (XTurn[b] or OTurn[b]) // balanced board
+     }
+}  for exactly 1 Board, 5 Int
 
 // find lowest empty spot in a column
 pred lowestEmpty[b: Board, col: Int, row: Int] {
@@ -150,6 +174,7 @@ pred move[pre: Board, c: Int, p: Player, post: Board] {
 pred XWinning {some b: Board | winning[b, X]}
 pred OWinning {some b: Board | winning[b, O]}
 
+
 test_turns: run {
     some b1, b2, b3: Board | {
         wellformed[b1]
@@ -173,9 +198,5 @@ test_turns: run {
     }
 } for exactly 3 Board, 5 Int
 
-// turns 
-// end conditions 
-// valid placements
-// valid states 
-// 
+
 

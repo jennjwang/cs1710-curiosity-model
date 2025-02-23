@@ -2,7 +2,6 @@
 
 open "connect-4.frg"
 
-
 test suite for winning {
 
     // valid case: x wins with horizontal connections
@@ -91,4 +90,29 @@ test suite for winning {
                         (1, 2) -> `O
     }
 
+}
+
+
+test expect {
+    horizontalWin: {
+        some b: Board, p: Player | {
+            wellformed[b]
+            b.board[0][0] = p
+            b.board[0][1] = p
+            b.board[0][2] = p
+            b.board[0][3] = p
+            winning[b, p]
+        }
+    } is sat
+
+    verticalWin: {
+        some b: Board, p: Player | {
+            wellformed[b]
+            b.board[0][0] = p
+            b.board[0][1] = p
+            b.board[0][2] = p
+            b.board[0][3] = p
+            winning[b, p]
+        }
+    } is sat
 }
