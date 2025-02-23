@@ -155,16 +155,16 @@ test_turns: run {
         
         starting[b1]  // empty board
         
-        // Force first move to be at bottom of column
+        // force first move to be at bottom of column
         some c1: Int | {
             move[b1, c1, X, b2]  // X moves first
-            b2.board[0][c1] = X  // Piece must be at bottom
+            b2.board[0][c1] = X  // piece must be at bottom
             
-            // Second move must be in different column
+            // second move must be in different column
             some c2: Int | {
-                c2 != c1  // Different column
+                c2 != c1  // different column
                 move[b2, c2, O, b3]  // O moves second
-                b3.board[0][c2] = O  // Also at bottom
+                b3.board[0][c2] = O  // also at bottom
             }
         }
     }
