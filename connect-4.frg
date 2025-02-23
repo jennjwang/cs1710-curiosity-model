@@ -1,4 +1,4 @@
-#lang forge/froglet 
+#lang forge
 
 // Players 
 abstract sig Player {}
@@ -13,12 +13,7 @@ sig Board {
 pred wellformed[b: Board] {
     // constrain row indices (0 to 5, for 6 rows)
     all row, col: Int | {
-        (row < 0 or row > 5) implies no b.board[row][col]
-    }
-    
-    // constrain column indices (0 to 6, for 7 columns)
-    all row, col: Int | {
-        (col < 0 or col > 6) implies no b.board[row][col]
+        (row < 0 or row > 5 or col < 0 or col > 6) implies no b.board[row][col]
     }
     
     // no floating pieces
@@ -43,6 +38,7 @@ pred XTurn[b: Board] {
   = 
   #{row, col: Int | b.board[row][col] = O}
 }
+
 pred OTurn[b: Board] {
   // defn in terms of XTurn?
   // not XTurn[b] // see notes
@@ -54,6 +50,7 @@ pred OTurn[b: Board] {
 pred winning[b: Board, p: Player] {
     -- win H
     some row, col: Int | {
+        (row > -1 and row < 6 and col > -1 and col < 4 )
         b.board[row][col] = p and
         b.board[row][add[col, 1]] = p and
         b.board[row][add[col, 2]] = p and
@@ -62,14 +59,17 @@ pred winning[b: Board, p: Player] {
     or 
     -- win V
     (some col, row: Int | {
+        (row > -1 and row < 3 and col > -1 or col < 6 )
         b.board[row][col] = p 
         b.board[add[row, 1]][col] = p 
         b.board[add[row, 2]][col] = p
         b.board[add[row, 3]][col] = p
     })
+
     or
     -- win D
     {
+        (row > -1 and row < 3 and col > -1 or col < 4 )
         b.board[row][col] = p
         b.board[add[row, 1]][add[col, 1]] = p
         b.board[add[row, 2]][add[col, 2]] = p
@@ -77,12 +77,16 @@ pred winning[b: Board, p: Player] {
     } 
     or 
     {
+        (row > -1 and row < 3 and col > -1 or col < 4 )
         b.board[row][add[col, 3]] = p
         b.board[add[row, 1]][add[col, 2]] = p
         b.board[add[row, 2]][add[col, 1]] = p
         b.board[add[row, 3]][col] = p
     }
+}
 
+pred all_boards_starting {
+    all b: Board | starting[b]
 }
 
 pred guaranteedWin[b: Board, p: Player] {
@@ -92,40 +96,6 @@ pred guaranteedWin[b: Board, p: Player] {
     p = O implies OTurn[b]
     winning[b, p]
 }
-
-// findWinningX: run {
-//     some b: Board | { 
-//         wellformed[b]
-//         winning[b, X]
-//         (XTurn[b] or OTurn[b]) // balanced board
-//     }
-// } 
-//   for exactly 1 Board, 4 Int
-
-test_guaranteed_win: run {
-    some b: Board | {
-        // Find position where X has guaranteed win
-        guaranteedWin[b, X]
-        
-        // Must be X's turn
-        XTurn[b]
-        
-        // Not already won
-        not winning[b, X]
-        
-        // Keep game state reasonable
-        #{row, col: Int | b.board[row][col] = X} = 
-        #{row, col: Int | b.board[row][col] = O}
-    }
-} for exactly 3 Board, 5 Int
-
-findWinningO: run {
-     some b: Board | { 
-         // wellformed[b]
-         guaranteedWin[b, O]
-         (XTurn[b] or OTurn[b]) // balanced board
-     }
-}  for exactly 1 Board, 5 Int
 
 // find lowest empty spot in a column
 pred lowestEmpty[b: Board, col: Int, row: Int] {
@@ -175,28 +145,31 @@ pred XWinning {some b: Board | winning[b, X]}
 pred OWinning {some b: Board | winning[b, O]}
 
 
-test_turns: run {
-    some b1, b2, b3: Board | {
-        wellformed[b1]
-        wellformed[b2]
-        wellformed[b3]
-        
-        starting[b1]  // empty board
-        
-        // force first move to be at bottom of column
-        some c1: Int | {
-            move[b1, c1, X, b2]  // X moves first
-            b2.board[0][c1] = X  // piece must be at bottom
-            
-            // second move must be in different column
-            some c2: Int | {
-                c2 != c1  // different column
-                move[b2, c2, O, b3]  // O moves second
-                b3.board[0][c2] = O  // also at bottom
-            }
+one sig Game {
+    firstBoard: one Board,
+    // Don't forget to make this pfunc, not func
+    nextBoard: pfunc Board -> Board
+}
+
+inst optimizer {
+    
+}
+
+pred gameTrace {
+    starting[Game.firstBoard]
+    wellformed[Game.firstBoard] 
+
+    all b: Board | some Game.nextBoard[b] => {
+        some row, col: Int, p: Player | {
+            move[b, col, p, Game.nextBoard[b]]
         }
     }
-} for exactly 3 Board, 5 Int
+    // We COULD say "the trace is a linear trace" here...
+    // ...but that wouldn't solve the "10! symmetries" problem
+}
 
-
+showAGame: run {
+    gameTrace
+} 
+  for 5 Board for {nextBoard is linear}
 

@@ -109,10 +109,58 @@ test expect {
         some b: Board, p: Player | {
             wellformed[b]
             b.board[0][0] = p
-            b.board[0][1] = p
-            b.board[0][2] = p
-            b.board[0][3] = p
+            b.board[1][0] = p
+            b.board[2][0] = p
+            b.board[3][0] = p
             winning[b, p]
         }
     } is sat
+
+    diagonalWin1: {
+        some b: Board, p1: Player, p2: Player | {
+            wellformed[b]
+            b.board[0][0] = p1
+            b.board[1][1] = p1
+            b.board[2][2] = p1
+            b.board[3][3] = p1
+            b.board[1][0] = p2
+            b.board[2][0] = p2
+            b.board[3][0] = p1
+            b.board[3][1] = p2
+            b.board[3][2] = p1
+            winning[b, p1]
+        }
+    } is sat
+
+
+    diagonalWin2: {
+        some b: Board, p1: Player, p2: Player | {
+            wellformed[b]
+            b.board[3][0] = p1
+            b.board[2][1] = p1
+            b.board[1][2] = p1
+            b.board[0][3] = p1
+            b.board[2][0] = p2
+            b.board[1][0] = p2
+            b.board[1][1] = p1
+            b.board[0][0] = p2
+            b.board[0][2] = p1
+            winning[b, p1]
+        }
+    } is sat
+
+    noWin: {
+        some b: Board, p1: Player, p2: Player| {
+            wellformed[b]
+            b.board[0][0] = p1
+            b.board[0][1] = p2
+            b.board[0][2] = p1
+            b.board[1][0] = p2
+            b.board[1][1] = p1
+            b.board[1][2] = p2
+            not winning[b, p1]
+            not winning[b, p2]
+        }
+    } is sat
+
 }
