@@ -147,6 +147,9 @@ pred move[pre: Board, c: Int, p: Player, post: Board] {
     }
 }
 
+pred XWinning {some b: Board | winning[b, X]}
+pred OWinning {some b: Board | winning[b, O]}
+
 test_turns: run {
     some b1, b2, b3: Board | {
         wellformed[b1]
@@ -175,3 +178,4 @@ test_turns: run {
 // valid placements
 // valid states 
 // 
+
