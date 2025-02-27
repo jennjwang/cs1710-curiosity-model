@@ -4,7 +4,7 @@
 
 **What are you trying to model? Include a brief description that would give someone unfamiliar with the topic a basic understanding of your goal.**
 
-This project models Connect Four, a two-player strategy game played on a 7x6 grid. Players take turns dropping pieces into columns, with the pieces stacking in the lowest available row. The objective is to form a line of four pieces in a row either horizontally, vertically, or diagonally. The model enforces the game rules and verifies conditions for valid moves and win detection. In this project, we exploring the winning conditions for the two players as a way to identify the best strategy in each position.
+This project models Connect Four, a two-player strategy game played on a 7x6 grid. Players take turns dropping pieces into columns, with the pieces stacking in the lowest available row. The objective is to form a line of four pieces in a row either horizontally, vertically, or diagonally. The model enforces the game rules and verifies conditions for valid moves and win detection. In this project, we explored gane states where players had guaranteed wins.
 
 ## Model Design and Visualization
 

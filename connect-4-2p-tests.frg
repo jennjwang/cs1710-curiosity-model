@@ -1,5 +1,5 @@
 #lang forge/froglet
-open "connect-4.frg"
+open "connect-4-2p.frg"
 
 test_turns: run {
     some b1, b2, b3: Board | {

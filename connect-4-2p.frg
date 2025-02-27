@@ -151,10 +151,6 @@ one sig Game {
     nextBoard: pfunc Board -> Board
 }
 
-inst optimizer {
-    
-}
-
 pred gameTrace {
     starting[Game.firstBoard]
     wellformed[Game.firstBoard] 
@@ -168,8 +164,15 @@ pred gameTrace {
     // ...but that wouldn't solve the "10! symmetries" problem
 }
 
+inst optimizer {
+    Board = `Board0 + `Board1 + `Board2 + `Board3 + `Board4 + `Board5
+    board in Board -> 
+             (0 + 1 + 2 + 3 + 4 + 5) ->  // Valid row indices
+             (0 + 1 + 2 + 3 + 4 + 5 + 6) ->  // Valid column indices
+             (`X + `O)  // Only valid player pieces
+}
+
 showAGame: run {
     gameTrace
 } 
   for 5 Board for {nextBoard is linear}
-
