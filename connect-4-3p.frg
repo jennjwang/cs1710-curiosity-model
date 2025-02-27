@@ -34,17 +34,21 @@ pred starting[b: Board] {
 }
 
 // Player turn: ensure the next player is valid and count moves
-pred playerTurn[b: Board, previous: Player, current: Player] {
-    // Ensure that the next player is valid
-    current in Player and previous != current
-
+pred playerTurn[b: Board, current: Player] {
+    // Player0's turn
     current = Player0 implies
-    #{row, col: Int | b.board[row][col] = previous}
-    =  #{row, col: Int | b.board[row][col] = current}
+    #{row, col: Int | b.board[row][col] = Player0}
+    =  #{row, col: Int | b.board[row][col] = Player2}
     
-    // Count the number of moves for the current player and the next player
-    current != Player0 implies #{row, col: Int | b.board[row][col] = previous}
-    = add[1, #{row, col: Int | b.board[row][col] = current}]
+    // Player1's turn
+    current = Player1 implies
+    #{row, col: Int | b.board[row][col] = Player0}
+    = add[1, #{row, col: Int | b.board[row][col] = Player1}]
+    
+    // Player2's turn
+    current = Player2 implies
+    #{row, col: Int | b.board[row][col] = Player1}
+    = add[1, #{row, col: Int | b.board[row][col] = Player2}]
 }
 
 // Winning conditions
@@ -78,11 +82,11 @@ pred winning[b: Board, p: Player] {
     or 
     // Diagonal win (bottom-left to top-right)
     (some row: Int, col: Int | {
-        row >= 0 and row < 3 and col >= 3 and col < 7
+        row >= 3 and row < 6 and col >= 0 and col < 4
         b.board[row][col] = p
-        b.board[add[row, 1]][subtract[col, 1]] = p
-        b.board[add[row, 2]][subtract[col, 2]] = p
-        b.board[add[row, 3]][subtract[col, 3]] = p
+        b.board[subtract[row, 1]][add[col, 1]] = p
+        b.board[subtract[row, 2]][add[col, 2]] = p
+        b.board[subtract[row, 3]][add[col, 3]] = p
     })
 }
 
@@ -95,7 +99,7 @@ pred all_boards_starting {
 pred guaranteedWin[b: Board, p: Player] {
     wellformed[b]
     // Must be player's turn
-    playerTurn[b, p]
+    some prev: Player | prev != p and playerTurn[b, prev]
     winning[b, p]
 }
 
@@ -113,7 +117,7 @@ pred lowestEmpty[b: Board, col: Int, row: Int] {
 }
 
 // Move predicate: place a piece in a column
-pred move[pre: Board, c: Int, p: Player, previous: Player, post: Board] {
+pred move[pre: Board, c: Int, p: Player, post: Board] {
     // Column must be valid
     c >= 0 and c <= 6
     
@@ -124,14 +128,12 @@ pred move[pre: Board, c: Int, p: Player, previous: Player, post: Board] {
     }
     
     // Must be player's turn
-    playerTurn[pre, previous, p]
+    playerTurn[pre, p]
     
     // Find the lowest empty position and place the piece
     some row: Int | {
         row >= 0 and row <= 5
         lowestEmpty[pre, c, row]
-        // Clear any previous piece at this position
-        no pre.board[row][c]
         // Place new piece
         post.board[row][c] = p
         
@@ -156,23 +158,57 @@ pred gameTrace {
     starting[Game.firstBoard]
     wellformed[Game.firstBoard] 
 
-    all b: Board | some Game.nextBoard[b] => {
-        some col: Int, p: Player, nextPlayer: Player | {
-            move[b, col, p, nextPlayer, Game.nextBoard[b]]
+    // First move: Player0 goes first
+    all b: Board | b = Game.firstBoard and some Game.nextBoard[b] implies {
+        some col: Int | move[b, col, Player0, Game.nextBoard[b]]
+    }
+
+    // All subsequent moves follow player turn order
+    all b: Board | some Game.nextBoard[b] and b != Game.firstBoard implies {
+        some col: Int, p: Player | {
+            move[b, col, p, Game.nextBoard[b]]
         }
     }
+
+    // All boards are well-formed
+    all b: Board | some Game.nextBoard[b] implies wellformed[Game.nextBoard[b]]
 }
 
-// Instance for optimization
-inst optimizer {
-    Board = `Board0 + `Board1 + `Board2 + `Board3 + `Board4 + `Board5
-    board in Board -> 
-             (0 + 1 + 2 + 3 + 4 + 5) ->  // Valid row indices
-             (0 + 1 + 2 + 3 + 4 + 5 + 6) ->  // Valid column indices
-             Player  // Valid player pieces
+
+// Player1 wins in the game
+pred player1Wins {
+    gameTrace
+    some b: Board | winning[b, Player1]
 }
 
-// Run the game trace
+// Player2 wins in the game
+pred player2Wins {
+    gameTrace
+    some b: Board | winning[b, Player2]
+}
+
+// Player0 wins in the game
+pred player0Wins {
+    gameTrace
+    some b: Board | winning[b, Player0]
+}
+
+// Someone wins in the game
+pred someoneWins {
+    player0Wins or player1Wins or player2Wins
+}
+
+// Run the game without requiring a win (just to see a valid game)
 showAGame: run {
     gameTrace
-} for 5 Board for {nextBoard is linear}
+} 
+  for 10 Board 
+  for {nextBoard is linear}
+
+// Run the game with Player2 winning
+showAWinner: run {
+    gameTrace
+    someoneWins
+} 
+  for 12 Board 
+  for {nextBoard is linear}
