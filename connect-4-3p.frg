@@ -144,11 +144,6 @@ pred move[pre: Board, c: Int, p: Player, previous: Player, post: Board] {
     }
 }
 
-// Check if a player is winning
-pred playerWinning[p: Player] { 
-    some b: Board | winning[b, p] 
-}
-
 // Game structure
 one sig Game {
     firstBoard: one Board,
