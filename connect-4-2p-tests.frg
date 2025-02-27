@@ -1,6 +1,7 @@
 #lang forge/froglet
 open "connect-4-2p.frg"
 
+// Test proper turn alternation across three boards
 test_turns: run {
     some b1, b2, b3: Board | {
         wellformed[b1]
@@ -9,141 +10,144 @@ test_turns: run {
         
         starting[b1]  // empty board
         
-        // force first move to be at bottom of column
+        // Force first move to be at bottom of column
         some c1: Int | {
-            move[b1, c1, X, b2]  // X moves first
-            b2.board[0][c1] = X  // piece must be at bottom
+            move[b1, c1, Player0, b2]  // Player0 moves first
+            b2.board[0][c1] = Player0  // Piece must be at bottom
             
-            // second move must be in different column
+            // Second move must be in different column
             some c2: Int | {
-                c2 != c1  // different column
-                move[b2, c2, O, b3]  // O moves second
-                b3.board[0][c2] = O  // also at bottom
+                c2 != c1  // Different column
+                move[b2, c2, Player1, b3]  // Player1 moves second
+                b3.board[0][c2] = Player1  // Also at bottom
             }
         }
     }
 } for exactly 3 Board, 5 Int
 
-
+// Example of an empty board as starting state
 example emptyBoardIsStart is all_boards_starting for {
     Board = `Board0 
-    X = `X   
-    O = `O
-    Player = X + O 
+    Player0 = `Player0   
+    Player1 = `Player1
+    Player = Player0 + Player1 
     no `Board0.board 
 }
 
-findWinningX: run {
+// Find a board where Player0 has won
+findWinningPlayer0: run {
      some b: Board | { 
          wellformed[b]
-         winning[b, X]
-         (XTurn[b] or OTurn[b]) // balanced board
+         winning[b, Player0]
+         (Player0Turn[b] or Player1Turn[b]) // Balanced board
     }
 } 
 for exactly 1 Board, 4 Int
 
-findWinningO: run {
+// Find a board where Player1 has won
+findWinningPlayer1: run {
      some b: Board | { 
          wellformed[b]
-         winning[b, O]
-         (XTurn[b] or OTurn[b]) // balanced board
+         winning[b, Player1]
+         (Player0Turn[b] or Player1Turn[b]) // Balanced board
      }
 }  for exactly 1 Board, 5 Int
 
 
-
+// Test suite for all winning conditions
 test suite for winning {
 
-    // valid case: x wins with horizontal connections
-    example horizontalWinX is { XWinning } for {
+    // Valid case: Player0 wins with horizontal connections
+    example horizontalWinPlayer0 is { Player0Winning } for {
         Board = `Board0
-        X = `X
-        O = `O
-        Player = X + O
-        `Board0.board = (0, 0) -> `X +
-                        (0, 1) -> `X +
-                        (0, 2) -> `X +
-                        (0, 3) -> `X
+        Player0 = `Player0
+        Player1 = `Player1
+        Player = Player0 + Player1
+        `Board0.board = (0, 0) -> `Player0 +
+                        (0, 1) -> `Player0 +
+                        (0, 2) -> `Player0 +
+                        (0, 3) -> `Player0
     }
 
-    // valid case: o wins with horizontal connections
-    example horizontalWinO is { OWinning } for {
+    // Valid case: Player1 wins with horizontal connections
+    example horizontalWinPlayer1 is { Player1Winning } for {
         Board = `Board0
-        X = `X      
-        O = `O
-        Player = X + O
-        `Board0.board = (1, 0) -> `O +
-                        (1, 1) -> `O +
-                        (1, 2) -> `O +
-                        (1, 3) -> `O
+        Player0 = `Player0      
+        Player1 = `Player1
+        Player = Player0 + Player1
+        `Board0.board = (1, 0) -> `Player1 +
+                        (1, 1) -> `Player1 +
+                        (1, 2) -> `Player1 +
+                        (1, 3) -> `Player1
     }
 
-    // valid case: x wins with vertical connections
-    example verticalWinX is { XWinning } for {
+    // Valid case: Player0 wins with vertical connections
+    example verticalWinPlayer0 is { Player0Winning } for {
         Board = `Board0
-        X = `X      
-        O = `O
-        Player = X + O
-        `Board0.board = (0, 2) -> `X +
-                        (1, 2) -> `X +
-                        (2, 2) -> `X +
-                        (3, 2) -> `X
+        Player0 = `Player0      
+        Player1 = `Player1
+        Player = Player0 + Player1
+        `Board0.board = (0, 2) -> `Player0 +
+                        (1, 2) -> `Player0 +
+                        (2, 2) -> `Player0 +
+                        (3, 2) -> `Player0
     }
 
-    // valid case: o wins with vertical connections
-    example verticalWinO is { OWinning } for {
+    // Valid case: Player1 wins with vertical connections
+    example verticalWinPlayer1 is { Player1Winning } for {
         Board = `Board0
-        X = `X      
-        O = `O
-        Player = X + O
-        `Board0.board = (0, 0) -> `O +
-                        (1, 0) -> `O +
-                        (2, 0) -> `O +
-                        (3, 0) -> `O
+        Player0 = `Player0      
+        Player1 = `Player1
+        Player = Player0 + Player1
+        `Board0.board = (0, 0) -> `Player1 +
+                        (1, 0) -> `Player1 +
+                        (2, 0) -> `Player1 +
+                        (3, 0) -> `Player1
     }
 
-    // valid case: x wins with diagonal connections
-    example diagonalWinX is { XWinning } for {
+    // Valid case: Player0 wins with diagonal connections (bottom-left to top-right)
+    example diagonalWinPlayer0 is { Player0Winning } for {
         Board = `Board0
-        X = `X      
-        O = `O
-        Player = X + O
-        `Board0.board = (0, 0) -> `X +
-                        (1, 1) -> `X +
-                        (2, 2) -> `X +
-                        (3, 3) -> `X
+        Player0 = `Player0      
+        Player1 = `Player1
+        Player = Player0 + Player1
+        `Board0.board = (0, 0) -> `Player0 +
+                        (1, 1) -> `Player0 +
+                        (2, 2) -> `Player0 +
+                        (3, 3) -> `Player0
     }
 
-    // valid case: o wins with diagonal connections
-    example diagonalWinO is { OWinning } for {
+    // Valid case: Player1 wins with diagonal connections (top-left to bottom-right)
+    example diagonalWinPlayer1 is { Player1Winning } for {
         Board = `Board0
-        X = `X      
-        O = `O
-        Player = X + O
-        `Board0.board = (3, 0) -> `O +
-                        (2, 1) -> `O +
-                        (1, 2) -> `O +
-                        (0, 3) -> `O
+        Player0 = `Player0      
+        Player1 = `Player1
+        Player = Player0 + Player1
+        `Board0.board = (3, 0) -> `Player1 +
+                        (2, 1) -> `Player1 +
+                        (1, 2) -> `Player1 +
+                        (0, 3) -> `Player1
     }
 
-    // invalid case: there is no winner
-    example noWinner is { not OWinning && not XWinning } for {
+    // Invalid case: no winner on the board
+    example noWinner is { not Player1Winning && not Player0Winning } for {
         Board = `Board0
-        X = `X      
-        O = `O
-        Player = X + O
-        `Board0.board = (0, 0) -> `X +
-                        (0, 1) -> `O +
-                        (0, 2) -> `X +
-                        (1, 0) -> `O +
-                        (1, 1) -> `X +
-                        (1, 2) -> `O
+        Player0 = `Player0      
+        Player1 = `Player1
+        Player = Player0 + Player1
+        `Board0.board = (0, 0) -> `Player0 +
+                        (0, 1) -> `Player1 +
+                        (0, 2) -> `Player0 +
+                        (1, 0) -> `Player1 +
+                        (1, 1) -> `Player0 +
+                        (1, 2) -> `Player1
     }
-
 }
 
 
+// Test expect blocks for win conditions
 test expect {
+    // Test horizontal win detection
     horizontalWin: {
         some b: Board, p: Player | {
             wellformed[b]
@@ -155,6 +159,7 @@ test expect {
         }
     } is sat
 
+    // Test vertical win detection
     verticalWin: {
         some b: Board, p: Player | {
             wellformed[b]
@@ -166,6 +171,7 @@ test expect {
         }
     } is sat
 
+    // Test diagonal win detection (bottom-left to top-right)
     diagonalWin1: {
         some b: Board, p1: Player, p2: Player | {
             wellformed[b]
@@ -182,7 +188,7 @@ test expect {
         }
     } is sat
 
-
+    // Test diagonal win detection (top-left to bottom-right)
     diagonalWin2: {
         some b: Board, p1: Player, p2: Player | {
             wellformed[b]
@@ -199,6 +205,7 @@ test expect {
         }
     } is sat
 
+    // Test case with no winning condition
     noWin: {
         some b: Board, p1: Player, p2: Player| {
             wellformed[b]
@@ -212,12 +219,12 @@ test expect {
             not winning[b, p2]
         }
     } is sat
-
 }
 
 
+// Test expect blocks for board constraints
 test expect {
-    // test empty board is wellformed
+    // Test that empty board is wellformed
     emptyBoardValid: {
         some b: Board | {
             starting[b]
@@ -225,53 +232,54 @@ test expect {
         }
     } is sat
 
-    // test valid piece placement at bottom
+    // Test valid piece placement at bottom
     bottomPieceValid: {
         some b: Board | {
             wellformed[b]
-            some b.board[0][0]  // piece at bottom-left
-            #{row, col: Int | some b.board[row][col]} = 1  // only one piece
+            some b.board[0][0]  // Piece at bottom-left
+            #{row, col: Int | some b.board[row][col]} = 1  // Only one piece
         }
     } is sat
 
-    // test valid stacking in same column
+    // Test valid stacking in same column
     stackingValid: {
         some b: Board | {
             wellformed[b]
-            some b.board[0][0]  // bottom piece
-            some b.board[1][0]  // piece above it
-            #{row, col: Int | some b.board[row][col]} = 2  // only two pieces
+            some b.board[0][0]  // Bottom piece
+            some b.board[1][0]  // Piece above it
+            #{row, col: Int | some b.board[row][col]} = 2  // Only two pieces
         }
     } is sat
 }
 
+// Test expect blocks for invalid configurations
 test expect {
-    // test piece outside row bounds is invalid
+    // Test piece outside row bounds is invalid
     outOfBoundsRowInvalid: {
         some b: Board | {
             wellformed[b]
-            some b.board[6][0]  // piece too high
+            some b.board[6][0]  // Piece too high (above row 5)
         }
     } is unsat
 
-    // test piece outside column bounds is invalid
+    // Test piece outside column bounds is invalid
     outOfBoundsColInvalid: {
         some b: Board | {
             wellformed[b]
-            some b.board[0][7]  // piece too far right
+            some b.board[0][7]  // Piece too far right (beyond column 6)
         }
     } is unsat
 
-    // test floating piece is invalid
+    // Test floating piece is invalid
     floatingPieceInvalid: {
         some b: Board | {
             wellformed[b]
-            some b.board[1][0]  // piece in second row
-            no b.board[0][0]    // no piece below it
+            some b.board[1][0]  // Piece in second row
+            no b.board[0][0]    // No piece below it
         }
     } is unsat
 
-    // test negative indices are invalid
+    // Test negative indices are invalid
     negativeIndicesInvalid: {
         some b: Board | {
             wellformed[b]
@@ -280,12 +288,13 @@ test expect {
     } is unsat
 }
 
+// Test expect blocks for valid board configurations
 test expect {
-    // test valid column fill
+    // Test valid column fill
     fullColumnValid: {
         some b: Board | {
             wellformed[b]
-            // fill entire first column
+            // Fill entire first column
             some b.board[0][0]
             some b.board[1][0]
             some b.board[2][0]
@@ -295,14 +304,14 @@ test expect {
         }
     } is sat
 
-    // test multiple columns with different heights
+    // Test multiple columns with different heights
     multipleColumnsValid: {
         some b: Board | {
             wellformed[b]
-            // two pieces in first column
+            // Two pieces in first column
             some b.board[0][0]
             some b.board[1][0]
-            // one piece in second column
+            // One piece in second column
             some b.board[0][1]
         }
     } is sat

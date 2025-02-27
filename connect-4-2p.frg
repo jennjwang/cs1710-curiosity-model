@@ -1,134 +1,138 @@
 #lang forge
 
-// Players 
+// Players representation
 abstract sig Player {}
-one sig X, O extends Player {}
+one sig Player0, Player1 extends Player {}
 
-// Board 
+// Board representation with a mapping from coordinates to players
 sig Board {
-    // Partial function from (Int,Int) to Player
+    // Partial function from (row, column) to Player
     board: pfunc Int -> Int -> Player
 }
 
+// Ensure the board follows physical constraints
 pred wellformed[b: Board] {
-    // constrain row indices (0 to 5, for 6 rows)
+    // Constrain row indices (0 to 5, for 6 rows) and column indices (0 to 6, for 7 columns)
     all row, col: Int | {
         (row < 0 or row > 5 or col < 0 or col > 6) implies no b.board[row][col]
     }
     
-    // no floating pieces
+    // No floating pieces - enforce gravity
     all row, col: Int | {
-        // if there's a piece at (row, col)
+        // If there's a piece at (row, col) and it's not the bottom row
         (some b.board[row][col] and row > 0) implies
-        // there must be a piece below it (row-1, col)
+        // There must be a piece below it (row-1, col)
         some b.board[subtract[row, 1]][col]
     }
 }
 
+// Initial empty board state
 pred starting[b: Board] {
     all row, col: Int | {
         no b.board[row][col]
     }
 }
 
-pred XTurn[b: Board] {
-  // even number of entries
-  // #X = #O
-  #{row, col: Int | b.board[row][col] = X}
-  = 
-  #{row, col: Int | b.board[row][col] = O}
+// Player0's turn when number of pieces is equal
+pred Player0Turn[b: Board] {
+    // Player0 moves when the number of pieces for each player is equal
+    #{row, col: Int | b.board[row][col] = Player0}
+    = 
+    #{row, col: Int | b.board[row][col] = Player1}
 }
 
-pred OTurn[b: Board] {
-  // defn in terms of XTurn?
-  // not XTurn[b] // see notes
-  #{row, col: Int | b.board[row][col] = X}
-  = 
-  add[1, #{row, col: Int | b.board[row][col] = O}]
+// Player1's turn when Player0 has one more piece
+pred Player1Turn[b: Board] {
+    // Player1 moves when Player0 has exactly one more piece
+    #{row, col: Int | b.board[row][col] = Player0}
+    = 
+    add[1, #{row, col: Int | b.board[row][col] = Player1}]
 }
 
+// Check for winning configurations in all directions
 pred winning[b: Board, p: Player] {
-    -- win H
+    // Horizontal win
     some row, col: Int | {
-        (row > -1 and row < 6 and col > -1 and col < 4 )
+        row >= 0 and row < 6 and col >= 0 and col < 4
         b.board[row][col] = p and
         b.board[row][add[col, 1]] = p and
         b.board[row][add[col, 2]] = p and
         b.board[row][add[col, 3]] = p
     }
     or 
-    -- win V
+    // Vertical win
     (some col, row: Int | {
-        (row > -1 and row < 3 and col > -1 or col < 6 )
-        b.board[row][col] = p 
-        b.board[add[row, 1]][col] = p 
-        b.board[add[row, 2]][col] = p
+        row >= 0 and row < 3 and col >= 0 and col < 7
+        b.board[row][col] = p and
+        b.board[add[row, 1]][col] = p and
+        b.board[add[row, 2]][col] = p and
         b.board[add[row, 3]][col] = p
     })
-
     or
-    -- win D
-    {
-        (row > -1 and row < 3 and col > -1 or col < 4 )
-        b.board[row][col] = p
-        b.board[add[row, 1]][add[col, 1]] = p
-        b.board[add[row, 2]][add[col, 2]] = p
+    // Diagonal win (bottom-left to top-right)
+    (some row, col: Int | {
+        row >= 0 and row < 3 and col >= 0 and col < 4
+        b.board[row][col] = p and
+        b.board[add[row, 1]][add[col, 1]] = p and
+        b.board[add[row, 2]][add[col, 2]] = p and
         b.board[add[row, 3]][add[col, 3]] = p
-    } 
+    })
     or 
-    {
-        (row > -1 and row < 3 and col > -1 or col < 4 )
-        b.board[row][add[col, 3]] = p
-        b.board[add[row, 1]][add[col, 2]] = p
-        b.board[add[row, 2]][add[col, 1]] = p
-        b.board[add[row, 3]][col] = p
-    }
+    // Diagonal win (top-left to bottom-right)
+    (some row, col: Int | {
+        row >= 3 and row < 6 and col >= 0 and col < 4
+        b.board[row][col] = p and
+        b.board[subtract[row, 1]][add[col, 1]] = p and
+        b.board[subtract[row, 2]][add[col, 2]] = p and
+        b.board[subtract[row, 3]][add[col, 3]] = p
+    })
 }
 
+// Verify all boards are empty at the start
 pred all_boards_starting {
     all b: Board | starting[b]
 }
 
+// Check if a player has a guaranteed win
 pred guaranteedWin[b: Board, p: Player] {
     wellformed[b]
-    // must be player's turn
-    p = X implies XTurn[b]
-    p = O implies OTurn[b]
+    // Must be player's turn
+    p = Player0 implies Player0Turn[b]
+    p = Player1 implies Player1Turn[b]
     winning[b, p]
 }
 
-// find lowest empty spot in a column
+// Find the lowest empty position in a column (gravity)
 pred lowestEmpty[b: Board, col: Int, row: Int] {
-    // position is empty
+    // Position is empty
     no b.board[row][col]
-    // either at bottom row or has piece below
+    // Either at bottom row or has a piece below
     (row = 0 or some b.board[subtract[row, 1]][col])
-    // no empty spaces below this position
+    // No empty spaces below this position
     all lowerRow: Int | {
         lowerRow >= 0 and lowerRow < row implies
         some b.board[lowerRow][col]
     }
 }
 
+// Make a move by placing a piece in a column
 pred move[pre: Board, c: Int, p: Player, post: Board] {
-    // column must be valid
+    // Column must be valid
     c >= 0 and c <= 6
     
-    // column must not be full
+    // Column must not be full
     some row: Int | {
         row >= 0 and row <= 5
         no pre.board[row][c]
     }
     
-    // must be player's turn
-    p = X implies XTurn[pre]
-    p = O implies OTurn[pre]
+    // Must be player's turn
+    p = Player0 implies Player0Turn[pre]
+    p = Player1 implies Player1Turn[pre]
     
-    // find lowest empty position and place piece
+    // Find the lowest empty position and place the piece
     some row: Int | {
         lowestEmpty[pre, c, row]
-        // Clear any previous piece at this position
-        no pre.board[row][c]
         // Place new piece
         post.board[row][c] = p
         
@@ -141,38 +145,59 @@ pred move[pre: Board, c: Int, p: Player, post: Board] {
     }
 }
 
-pred XWinning {some b: Board | winning[b, X]}
-pred OWinning {some b: Board | winning[b, O]}
+// Helper predicates for winning conditions
+pred Player0Winning {some b: Board | winning[b, Player0]}
+pred Player1Winning {some b: Board | winning[b, Player1]}
 
-
+// Game structure to track board progression
 one sig Game {
     firstBoard: one Board,
-    // Don't forget to make this pfunc, not func
+    // Partial function for next board state
     nextBoard: pfunc Board -> Board
 }
 
+// Define valid game trace with proper move sequence
 pred gameTrace {
+    // Start with an empty board
     starting[Game.firstBoard]
     wellformed[Game.firstBoard] 
 
-    all b: Board | some Game.nextBoard[b] => {
-        some row, col: Int, p: Player | {
+    // For each board with a next state, ensure a valid move occurs
+    all b: Board | some Game.nextBoard[b] implies {
+        some col: Int, p: Player | {
             move[b, col, p, Game.nextBoard[b]]
         }
     }
-    // We COULD say "the trace is a linear trace" here...
-    // ...but that wouldn't solve the "10! symmetries" problem
 }
 
+// Instance for optimization
 inst optimizer {
     Board = `Board0 + `Board1 + `Board2 + `Board3 + `Board4 + `Board5
     board in Board -> 
              (0 + 1 + 2 + 3 + 4 + 5) ->  // Valid row indices
              (0 + 1 + 2 + 3 + 4 + 5 + 6) ->  // Valid column indices
-             (`X + `O)  // Only valid player pieces
+             (Player0 + Player1)  // Valid player pieces
 }
 
+// Find a valid game trace
 showAGame: run {
     gameTrace
 } 
-  for 5 Board for {nextBoard is linear}
+  for 5 Board 
+  for {nextBoard is linear}
+
+// Find a game where Player0 wins
+showPlayer0Win: run {
+    gameTrace
+    Player0Winning
+} 
+  for 6 Board 
+  for {nextBoard is linear}
+
+// Find a game where Player1 wins
+showPlayer1Win: run {
+    gameTrace
+    Player1Winning
+} 
+  for 6 Board 
+  for {nextBoard is linear}
