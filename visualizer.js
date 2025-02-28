@@ -1,211 +1,149 @@
+const d3 = require("d3");
+d3.selectAll("svg > *").remove(); // Clear the SVG canvas
+
 /*
-  Visualization script for Connect 4 game in Sterling.
-  Displays board states for each Board atom in the Forge model.
-  
-  Based on the Connect 4 model with 3 players.
+  Visualizer for the Connect 4 game model.
+  This code renders the board states for each Board atom in the Forge model.
+  Each board is displayed as a grid of cells, with player pieces represented by colored circles.
 */
 
-// Helper functions to extract atoms
-function firstAtomOf(expr) {
-  if (!expr.empty()) return expr.tuples()[0].atoms()[0];
-  return "none";
-}
-const fam = firstAtomOf; // shorthand
-
 // Constants for visualization
-const CELL_SIZE = 40;
-const BOARD_WIDTH = 7;
-const BOARD_HEIGHT = 6;
-const BOARD_SPACING = 60;
+const CELL_SIZE = 40; // Size of each cell in the grid
+const BOARD_WIDTH = 7; // Number of columns in the Connect 4 board
+const BOARD_HEIGHT = 6; // Number of rows in the Connect 4 board
+const BOARD_SPACING = 60; // Vertical spacing between boards
 
-// Get all Board atoms
-const boards = Board.tuples().map((btup) => fam(btup));
+// Function to draw a circle representing a player's piece
+function drawPiece(row, col, yoffset, playerStr) {
+  // Invert the row index so that 0 is the bottom row
+  const invertedRow = BOARD_HEIGHT - 1 - row;
 
-// Get all Player atoms
-const players = Player.tuples().map((ptup) => fam(ptup));
+  // Determine player and color based on the string
+  let color = "gray";
+  let label = "?";
 
-// Create configuration for the board grid
-const boardGridConfig = {
-  grid_location: { x: 10, y: 10 },
-  cell_size: { x_size: CELL_SIZE, y_size: CELL_SIZE },
-  grid_dimensions: {
-    y_size: BOARD_HEIGHT, // 6 rows
-    x_size: BOARD_WIDTH, // 7 columns
-  },
-};
+  if (playerStr.includes("00")) {
+    color = "red";
+    label = "P0";
+  } else if (playerStr.includes("10")) {
+    color = "yellow";
+    label = "P1";
+  } else if (playerStr.includes("20")) {
+    color = "blue";
+    label = "P2";
+  }
 
-// Create a stage to hold all visualizations
-const stage = new Stage();
+  // Draw the colored circle
+  d3.select(svg)
+    .append("circle")
+    .attr("cx", (col + 0.5) * CELL_SIZE) // X position (center of cell)
+    .attr("cy", yoffset + (invertedRow + 0.5) * CELL_SIZE) // Y position (center of cell)
+    .attr("r", CELL_SIZE * 0.4) // Radius (slightly smaller than cell)
+    .attr("fill", color)
+    .attr("stroke", "black")
+    .attr("stroke-width", 1);
 
-// Function to get player color
-function getPlayerColor(player) {
-  if (player && player.id().includes("Player0")) return "red";
-  if (player && player.id().includes("Player1")) return "yellow";
-  if (player && player.id().includes("Player2")) return "blue";
-  return "white";
+  // Add the player label
+  d3.select(svg)
+    .append("text")
+    .style("fill", "white") // Text color
+    .style("font-size", "14px") // Font size
+    .style("text-anchor", "middle") // Center text horizontally
+    .style("font-weight", "bold") // Make text bold
+    .attr("x", (col + 0.5) * CELL_SIZE) // X position (column-based)
+    .attr("y", yoffset + (invertedRow + 0.55) * CELL_SIZE) // Y position (using inverted row)
+    .text(label); // Display the player label
 }
 
-// Function to get player label
-function getPlayerLabel(player) {
-  if (player && player.id().includes("Player0")) return "P0";
-  if (player && player.id().includes("Player1")) return "P1";
-  if (player && player.id().includes("Player2")) return "P2";
-  return "";
-}
+// Function to print a board state
+function printState(stateAtom, yoffset) {
+  // Draw the game board with cells
+  for (let r = 0; r < BOARD_HEIGHT; r++) {
+    for (let c = 0; c < BOARD_WIDTH; c++) {
+      // Invert the row index for display
+      const invertedRow = BOARD_HEIGHT - 1 - r;
 
-// Track vertical position for multiple boards
-let yOffset = 10;
+      // Draw each cell of the grid
+      d3.select(svg)
+        .append("rect")
+        .attr("x", c * CELL_SIZE)
+        .attr("y", yoffset + invertedRow * CELL_SIZE)
+        .attr("width", CELL_SIZE)
+        .attr("height", CELL_SIZE)
+        .attr("stroke-width", 1)
+        .attr("stroke", "black")
+        .attr("fill", "#e0e0e0"); // Light gray background
 
-// Process each board
-boards.forEach((board, boardIndex) => {
-  // Create title for the board
-  const boardTitle = new TextBox({
-    text: `Board: ${board.id()}`,
-    x: 10,
-    y: yOffset,
-    color: "black",
-    size: 16,
-    font: "bold",
-  });
-  stage.add(boardTitle);
-
-  // Adjust y-offset for the grid
-  yOffset += 30;
-
-  // Create grid for this board
-  const boardGridConfig = {
-    grid_location: { x: 10, y: yOffset },
-    cell_size: { x_size: CELL_SIZE, y_size: CELL_SIZE },
-    grid_dimensions: {
-      y_size: BOARD_HEIGHT,
-      x_size: BOARD_WIDTH,
-    },
-  };
-
-  const boardGrid = new Grid(boardGridConfig);
-
-  // Populate the grid with pieces
-  for (let row = 0; row < BOARD_HEIGHT; row++) {
-    for (let col = 0; col < BOARD_WIDTH; col++) {
-      // Calculate inverted row (to show row 0 at bottom)
-      const invertedRow = BOARD_HEIGHT - 1 - row;
-
-      // Get player at this position
-      const boardAtRow = board.join(board).join(row);
-      const playerAtCell = boardAtRow.join(col);
-
-      // Create a circle for the cell
-      const cellColor = getPlayerColor(playerAtCell.atom());
-      const playerLabel = getPlayerLabel(playerAtCell.atom());
-
-      // Add a circle to represent the cell
-      boardGrid.add(
-        { x: col, y: invertedRow },
-        new Circle({
-          radius: CELL_SIZE * 0.4,
-          fill: cellColor,
-          stroke: "black",
-          strokeWidth: 1,
-        })
-      );
-
-      // Add the player label if there's a piece here
-      if (playerLabel) {
-        boardGrid.add(
-          { x: col, y: invertedRow },
-          new TextBox({
-            text: playerLabel,
-            color: "white",
-            size: 14,
-            bold: true,
-          })
-        );
-      }
+      // Draw empty slot circles
+      d3.select(svg)
+        .append("circle")
+        .attr("cx", (c + 0.5) * CELL_SIZE)
+        .attr("cy", yoffset + (invertedRow + 0.5) * CELL_SIZE)
+        .attr("r", CELL_SIZE * 0.4)
+        .attr("fill", "white")
+        .attr("stroke", "#cccccc")
+        .attr("stroke-width", 1);
     }
   }
 
-  // Add column labels at the bottom
-  for (let col = 0; col < BOARD_WIDTH; col++) {
-    const colLabel = new TextBox({
-      text: `${col}`,
-      x: 10 + col * CELL_SIZE + CELL_SIZE / 2,
-      y: yOffset + BOARD_HEIGHT * CELL_SIZE + 15,
-      color: "black",
-      size: 12,
-    });
-    stage.add(colLabel);
+  // Draw a rectangle around the entire board
+  d3.select(svg)
+    .append("rect")
+    .attr("x", 0)
+    .attr("y", yoffset)
+    .attr("width", BOARD_WIDTH * CELL_SIZE)
+    .attr("height", BOARD_HEIGHT * CELL_SIZE)
+    .attr("stroke-width", 2)
+    .attr("stroke", "black")
+    .attr("fill", "none");
+
+  // Add pieces to the board
+  for (let r = 0; r < BOARD_HEIGHT; r++) {
+    for (let c = 0; c < BOARD_WIDTH; c++) {
+      // Get the player piece at (r, c)
+      const player = stateAtom.board[r][c];
+      if (player != null) {
+        // Get string representation of the player
+        const playerStr = player.toString();
+        // Draw the player piece
+        drawPiece(r, c, yoffset, playerStr);
+      }
+    }
   }
-
-  // Add the board grid to the stage
-  stage.add(boardGrid);
-
-  // Add border around the entire board
-  const boardBorder = new Rectangle({
-    x: 10,
-    y: yOffset,
-    width: BOARD_WIDTH * CELL_SIZE,
-    height: BOARD_HEIGHT * CELL_SIZE,
-    fill: "none",
-    stroke: "black",
-    strokeWidth: 2,
-  });
-  stage.add(boardBorder);
-
-  // Update y-offset for the next board
-  yOffset += BOARD_HEIGHT * CELL_SIZE + BOARD_SPACING;
-});
-
-// Add a legend to explain the colors
-const legendY = yOffset;
-const players = ["Player0", "Player1", "Player2"];
-const colors = ["red", "yellow", "blue"];
-const labels = ["P0", "P1", "P2"];
-
-// Title for the legend
-const legendTitle = new TextBox({
-  text: "Legend:",
-  x: 10,
-  y: legendY,
-  color: "black",
-  size: 14,
-  font: "bold",
-});
-stage.add(legendTitle);
-
-// Add legend items
-for (let i = 0; i < players.length; i++) {
-  // Circle for the player color
-  const legendCircle = new Circle({
-    x: 70 + i * 80,
-    y: legendY,
-    radius: 15,
-    fill: colors[i],
-    stroke: "black",
-    strokeWidth: 1,
-  });
-  stage.add(legendCircle);
-
-  // Label for the player
-  const legendLabel = new TextBox({
-    text: labels[i],
-    x: 70 + i * 80,
-    y: legendY,
-    color: "white",
-    size: 12,
-    bold: true,
-  });
-  stage.add(legendLabel);
-
-  // Player name
-  const playerName = new TextBox({
-    text: players[i],
-    x: 70 + i * 80,
-    y: legendY + 25,
-    color: "black",
-    size: 12,
-  });
-  stage.add(playerName);
 }
 
-// Render the stage
-stage.render(svg);
+// Add column labels at the bottom of each board
+function addColumnLabels(yoffset) {
+  for (let c = 0; c < BOARD_WIDTH; c++) {
+    d3.select(svg)
+      .append("text")
+      .style("fill", "black")
+      .style("font-size", "12px")
+      .style("text-anchor", "middle")
+      .attr("x", (c + 0.5) * CELL_SIZE)
+      .attr("y", yoffset + BOARD_HEIGHT * CELL_SIZE + 15)
+      .text(c);
+  }
+}
+
+// Main visualization logic
+let offset = 30; // Vertical offset for the first board
+for (let b = 0; b <= 20; b++) {
+  const boardAtom = Board.atom("Board" + b); // Get the Board atom
+  if (boardAtom != null) {
+    // Add board label
+    d3.select(svg)
+      .append("text")
+      .style("fill", "black")
+      .style("font-size", "16px")
+      .style("font-weight", "bold")
+      .attr("x", 0)
+      .attr("y", offset - 10)
+      .text("Board" + b);
+
+    printState(boardAtom, offset); // Render the board state
+    addColumnLabels(offset); // Add column labels
+
+    offset += BOARD_HEIGHT * CELL_SIZE + BOARD_SPACING; // Increase offset for the next board
+  }
+}
