@@ -55,3 +55,17 @@ test_startingPlayer: run {
     }
 } for exactly 2 Board, 7 Int
 
+// Run the game without requiring a win (just to see a valid game)
+showAGame: run {
+    gameTrace
+} 
+  for 10 Board 
+  for {nextBoard is linear}
+
+// Run the game with someone winning
+showAWinner: run {
+    gameTrace
+    someoneWins
+} 
+  for 12 Board 
+  for {nextBoard is linear}

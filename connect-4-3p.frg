@@ -197,18 +197,3 @@ pred player0Wins {
 pred someoneWins {
     player0Wins or player1Wins or player2Wins
 }
-
-// Run the game without requiring a win (just to see a valid game)
-showAGame: run {
-    gameTrace
-} 
-  for 10 Board 
-  for {nextBoard is linear}
-
-// Run the game with Player2 winning
-showAWinner: run {
-    gameTrace
-    someoneWins
-} 
-  for 12 Board 
-  for {nextBoard is linear}
