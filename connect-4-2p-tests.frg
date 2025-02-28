@@ -316,3 +316,56 @@ test expect {
         }
     } is sat
 }
+
+pred boardFull[b: Board] {
+    all col: Int | col >= 0 and col <= 6 implies
+        some b.board[5][col]
+}
+
+test expect {
+    // Test that a full board with no winner is a draw
+    drawPossible: {
+        some b: Board | {
+            wellformed[b]
+            boardFull[b]
+            not winning[b, Player0]
+            not winning[b, Player1]
+            
+            // Force all pieces to be in valid positions
+            all row, col: Int | some b.board[row][col] implies {
+                row >= 0 and row <= 5
+                col >= 0 and col <= 6
+            }
+        }
+    } is sat
+}
+
+test expect {
+    // test that a move to a full column is invalid
+    fullColumnMove: {
+        some b, b2: Board | {
+            wellformed[b]
+            b.board[0][0] = Player0
+            b.board[1][0] = Player1
+            b.board[2][0] = Player0
+            b.board[3][0] = Player1
+            b.board[4][0] = Player0
+            b.board[5][0] = Player1
+            move[b, 0, Player0, b2]
+        }
+    } is unsat
+}
+
+test expect {
+    // test player can't make two consecutive moves
+    noConsecutiveMoves: {
+        some b1, b2, b3: Board | {
+            wellformed[b1]
+            starting[b1]
+            some col: Int | {
+                move[b1, col, Player0, b2]
+                move[b2, col, Player0, b3] 
+            }
+        }
+    } is unsat
+}

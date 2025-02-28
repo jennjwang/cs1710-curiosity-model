@@ -34,6 +34,32 @@ An instance produced by the Sterling visualizer shows a sequence of Board object
 We created a custom visualization that displays each Board instance as a traditional Connect Four grid with 7 columns and 6 rows. Each board is rendered vertically as a grid of cells with empty white circles representing available spaces. Player pieces are shown as colored circles: Player0 pieces appear as red circles labeled "P0", Player1 pieces as yellow circles labeled "P1", and Player2 pieces, if available, as blue circles labeled "P2". The visualization inverts the row indexing so that row 0 appears at the bottom of the display (matching how pieces would naturally stack in a physical Connect Four game) and matches the column indexing from 0-6 left to right. Multiple boards are displayed vertically in sequence, each labeled with its corresponding atom name (e.g., "Board0", "Board1"). You can follow the boards from top to bottom, seeing how pieces accumulate and how the game state evolves with each move.
 
 **Signatures and Predicates: At a high level, what do each of your sigs and preds represent in the context of the model? Justify the purpose for their existence and how they fit together.**
+Signatures
+  Player: An abstract signature representing the players (Player0 and Player1)
+    -This abstraction allows you to have a flexible player representation
+  Board: Represents the game board with a partial function mapping coordinates to players
+    -The board relation uses a clever nested mapping (Int -> Int -> Player) to create a 2D grid
+    -Using a partial function ensures each position can have at most one piece
+  
+Key Predicates
+  wellformed: Ensures the board follows physical constraints
+    -Bounds checking (6 rows, 7 columns)
+    -Gravity simulation (no floating pieces)
+  starting: Defines the initial empty state of the board
+  Player0Turn/Player1Turn: Controls turn alternation
+    -Based on counting pieces to determine whose turn it is
+    -Creates a balanced, alternating play pattern
+  winning: Checks for four-in-a-row connections in all directions
+    -Horizontal, vertical, and both diagonal directions
+    -Each with appropriate bounds checks
+  lowestEmpty: Helper predicate that finds where a piece will land in a column
+    -Implements the gravity rule of Connect Four
+  move: Defines valid moves with proper guarding
+    -Ensures turns alternate correctly
+    -Makes sure pieces fall to the lowest available position
+    -Preserves pieces from the previous state (frame condition)
+  gameTrace: Creates sequences of valid game states
+    -Manages progression from the first board through subsequent moves
 
 **Testing: What tests did you write to test your model itself? What tests did you write to verify properties about your domain area? Feel free to give a high-level overview of this.**
 
@@ -46,6 +72,9 @@ We created a custom visualization that displays each Board instance as a traditi
     - emptyBoardValid: Confirms empty boards are valid
     - bottomPieceValid: Tests placement of a single piece at the bottom
     - stackingValid: Verifies that pieces can stack properly in the same column
+    - drawPossible: Tests that a full board with no winner is a valid draw state
+    - fullColumnMove: Verifies that attempting to place a piece in a full column is invalid
+    - noConsecutiveMoves: Ensures players cannot make two consecutive moves, enforcing turn alternation
 
 Documentation: Make sure your model and test files are well-documented. This will help in understanding the structure and logic of your project.
 
